@@ -58,7 +58,7 @@ def mouse_game(chat_id, user_id, user_name):
         bot.send_message(chat_id, "Mrr, you won... (rep +1)")
         update_reputation(user_id, user_name)
         mg_user_id = 0
-        mg_count = 0
+        mg_count = 1
         incorrect = 0
 
 def update_reputation(user_id, user_name):
@@ -204,6 +204,7 @@ def update_text_message(message : telebot.types.Message):
         if asked_for_food:
             bot.send_message(chat_id, "Mrrra🥰 (rep +1)", reply_to_message_id=message_id)
             last_message_id = 0
+            asked_for_food = False
             update_reputation(user_id, message_user.first_name)
         else:
             if user_id in last_feed_time:
