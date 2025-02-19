@@ -30,10 +30,10 @@ def mouse_game(chat_id, user_id, user_name):
     global mg_count, mg_user_id, msg_to_delete, incorrect
 
     keyboard = InlineKeyboardMarkup()
-    left_button = InlineKeyboardButton(text="⬅️🐭", callback_data="mg_0")
-    right_button = InlineKeyboardButton(text="🐭➡️", callback_data="mg_1")
-    up_button = InlineKeyboardButton(text="⬆️🐭⬆️️", callback_data="mg_2")
-    down_button = InlineKeyboardButton(text="⬇️🐭⬇️", callback_data="mg_3")
+    left_button = InlineKeyboardButton(text="⬅🐭", callback_data="mg_0")
+    right_button = InlineKeyboardButton(text="🐭➡", callback_data="mg_1")
+    up_button = InlineKeyboardButton(text="⬆🐭⬆", callback_data="mg_2")
+    down_button = InlineKeyboardButton(text="⬇🐭⬇", callback_data="mg_3")
     keyboard.add(up_button, row_width=1)
     keyboard.add(left_button, right_button, row_width=2)
     keyboard.add(down_button, row_width=1)
@@ -184,7 +184,7 @@ def update_text_message(message : telebot.types.Message):
           f"Text: {message_text}\n")
 
     #feed request
-    if random.random() < 0.03:
+    if random.random() < 0.02:
         last_message_id = bot.send_message(chat_id, "Mrraw🙏").id
         asked_for_food = True
         print(last_message_id)
@@ -248,7 +248,7 @@ def callback(call: CallbackQuery):
         bot.delete_message(chat_id, call.message.id)
         mouse_game(chat_id, user_id, call.from_user.first_name)
 
-    elif call_data == "mg_0":
+    if call_data == "mg_0":
         if user_id == mg_user_id:
             if incorrect == 0:
                 bot.delete_message(chat_id, call.message.id)
@@ -258,7 +258,7 @@ def callback(call: CallbackQuery):
             else:
                 mouse_game(chat_id, user_id, call.from_user.first_name)
         else:
-            bot.send_message(chat_id, "You are not playing now!")
+            bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
     elif call_data == "mg_1":
         if user_id == mg_user_id:
             if incorrect == 1:
@@ -269,7 +269,7 @@ def callback(call: CallbackQuery):
             else:
                 mouse_game(chat_id, user_id, call.from_user.first_name)
         else:
-            bot.send_message(chat_id, "You are not playing now!")
+            bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
     elif call_data == "mg_2":
         if user_id == mg_user_id:
             if incorrect == 2:
@@ -280,7 +280,7 @@ def callback(call: CallbackQuery):
             else:
                 mouse_game(chat_id, user_id, call.from_user.first_name)
         else:
-            bot.send_message(chat_id, "You are not playing now!")
+            bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
     elif call_data == "mg_3":
         if user_id == mg_user_id:
             if incorrect == 3:
@@ -291,7 +291,7 @@ def callback(call: CallbackQuery):
             else:
                 mouse_game(chat_id, user_id, call.from_user.first_name)
         else:
-            bot.send_message(chat_id, "You are not playing now!")
+            bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
 
 
 bot.infinity_polling(skip_pending=True)
