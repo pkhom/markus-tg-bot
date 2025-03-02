@@ -2,6 +2,7 @@ import os
 import random
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
+from github import Github
 
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
@@ -9,6 +10,9 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 API_TOKEN = "5010145034:AAHAqSJkVZ5NnDRKMsOAUjSKBznZGwd94LQ"
 
 bot = telebot.TeleBot(API_TOKEN)
+
+github = Github("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")
+repo = github.get_repo("pkhom/markus-tg-bot")
 
 last_pet_time = {}
 last_feed_time = {}
@@ -67,7 +71,7 @@ def mouse_game(chat_id, user_id, user_name):
         mg_count = 1
         mg_incorrect = 0
 
-def update_reputation(user_id, user_name, rep):
+def update_reputation(user_id, user_name, repu: int):
     reputation_data = {}
     file_path = "../stats/rep.txt"
 
@@ -88,7 +92,7 @@ def update_reputation(user_id, user_name, rep):
     print(reputation_data)
 
     if user_id in reputation_data:
-        reputation_data[user_id]["rep"] += rep
+        reputation_data[user_id]["rep"] += repu
     else:
         reputation_data[user_id] = {"username": user_name, "rep": 1}
 
@@ -262,13 +266,29 @@ def sleep_command(message: telebot.types.Message):
         bot.send_message(chat_id, "Only Pašica can use this command")
 
 
-@bot.message_handler(commands=["foods"])
-def foods_command(message: telebot.types.Message):
-    text = ""
-    for i in foods:
-        text += f"{i}, "
+@bot.message_handler(commands=["info"])
+def info_command(message: telebot.types.Message):
+    food = ""
+    for emoji in foods:
+        food += f"{emoji}, "
 
-    bot.send_message(message.chat.id, text)
+    last_commit = repo.get_commits()[0]
+    bot.send_message(message.chat.id, f"Markus Version {last_commit.sha}\n"
+                                      f"**Latest update:**\n"
+                                      f"{last_commit.commit.message}\n"
+                                      f"\n"
+                                      f"**Reputation ranks:**\n"
+                                      f"0-70: Bronze\n"
+                                      f"70-140: Silver\n"
+                                      f"140-210: Gold\n"
+                                      f"210-280: Diamond\n"
+                                      f"280-350: Mythic\n"
+                                      f"350-420: Legendary\n"
+                                      f"420-490: Master\n"
+                                      f"490+: Pro\n"
+                                      f"\n"
+                                      f"**Supported foods:**\n"
+                                      f"{food}", parse_mode="Markdown")
 
 
 @bot.message_handler(func=lambda message: True)
