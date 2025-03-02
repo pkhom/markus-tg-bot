@@ -132,11 +132,11 @@ def pet_command(message: telebot.types.Message):
         last_time = last_pet_time[message.from_user.id]
         time_diff = current_time - last_time
 
-        if time_diff < timedelta(hours=2):
-            remaining_time = timedelta(hours=2) - time_diff
+        if time_diff < timedelta(hours=1):
+            remaining_time = timedelta(hours=1) - time_diff
             hours, remainder = divmod(remaining_time.seconds, 3600)
             minutes = remainder // 60
-            bot.reply_to(message, f"You can pet me again in {hours} hours and {minutes} minutes!")
+            bot.reply_to(message, f"You can pet me again in {minutes} minutes!")
             return
 
     last_pet_time[message.from_user.id] = current_time
@@ -191,22 +191,22 @@ def rep_command(message: telebot.types.Message):
         img = Image.open("../images/nopfp.png")
 
     try:
-        if rep < 51:
+        if rep <= 70:
             bg = Image.open("../images/Battle_Card-Bronze.png")
-        elif 50 < rep < 101:
+        elif 70 < rep <= 140:
             bg = Image.open("../images/Battle_Card-Silver.png")
-        elif 100 < rep < 151:
+        elif 140 < rep <= 210:
             bg = Image.open("../images/Battle_Card-Gold.png")
-        elif 150 < rep < 201:
+        elif 210 < rep <= 280:
             bg = Image.open("../images/Battle_Card-Diamond.png")
-        elif 200 < rep < 251:
+        elif 280 < rep <= 350:
             bg = Image.open("../images/Battle_Card-Mythic.png")
-        elif 250 < rep < 301:
+        elif 350 < rep <= 420:
             bg = Image.open("../images/Battle_Card-Legendary.png")
-        elif 300 < rep < 350:
-            bg = Image.open("../images/Battle_Card-Pro.png")
-        elif rep > 350:
+        elif 420 < rep <= 490:
             bg = Image.open("../images/Battle_Card-Masters.png")
+        elif rep > 490:
+            bg = Image.open("../images/Battle_Card-Pro.png")
 
         img_w, img_h = img.size
         bg_w, bg_h = bg.size
@@ -260,6 +260,15 @@ def sleep_command(message: telebot.types.Message):
             bot.send_message(chat_id, "It's time to sleep, the group is closed.\nGood night. Mrreow🥰")
     else:
         bot.send_message(chat_id, "Only Pašica can use this command")
+
+
+@bot.message_handler(commands=["foods"])
+def foods_command(message: telebot.types.Message):
+    text = ""
+    for i in foods:
+        text += f"{i}, "
+
+    bot.send_message(message.chat.id, text)
 
 
 @bot.message_handler(func=lambda message: True)
@@ -324,11 +333,11 @@ def update_text_message(message : telebot.types.Message):
                 last_time = last_feed_time[user_id]
                 time_diff = current_time - last_time
 
-                if time_diff < timedelta(hours=0.5):
-                    remaining_time = timedelta(hours=0.5) - time_diff
+                if time_diff < timedelta(minutes=15):
+                    remaining_time = timedelta(minutes=15) - time_diff
                     hours, remainder = divmod(remaining_time.seconds, 3600)
                     minutes = remainder // 60
-                    bot.reply_to(message, f"You can feed me again in {hours} hours and {minutes} minutes!")
+                    bot.reply_to(message, f"You can feed me again in {minutes} minutes!")
                     return
 
             last_feed_time[message.from_user.id] = current_time
