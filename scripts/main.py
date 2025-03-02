@@ -268,12 +268,19 @@ def sleep_command(message: telebot.types.Message):
 
 @bot.message_handler(commands=["info"])
 def info_command(message: telebot.types.Message):
+    commits = repo.get_commits()
+
+    last_commit = commits[0]
+    version = 0
+
+    for _ in commits:
+        version += 1
+
     food = ""
     for emoji in foods:
         food += f"{emoji}, "
 
-    last_commit = repo.get_commits()[0]
-    bot.send_message(message.chat.id, f"Markus Version {last_commit.sha}\n"
+    bot.send_message(message.chat.id, f"Markus Version {version}\n"
                                       f"**Latest update:**\n"
                                       f"{last_commit.commit.message}\n"
                                       f"\n"
