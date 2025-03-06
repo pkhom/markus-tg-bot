@@ -1,15 +1,19 @@
 import os
 import random
+import re
 from datetime import datetime, timedelta
-from PIL import Image, ImageDraw, ImageFont
-from github import Github
 
 import telebot
+from PIL import Image, ImageDraw, ImageFont
+from apscheduler.schedulers.background import BackgroundScheduler
+from github import Github
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 API_TOKEN = "5010145034:AAHAqSJkVZ5NnDRKMsOAUjSKBznZGwd94LQ"
 
 bot = telebot.TeleBot(API_TOKEN)
+
+scheduler = BackgroundScheduler()
 
 github = Github("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")
 repo = github.get_repo("pkhom/markus-tg-bot")
@@ -34,6 +38,10 @@ foods = ["🍗", "🐟", "🥓", "🍕", "🥛", "🧀", "🥩", "🍖", "🍤"]
 sleep = False
 
 games = ["Mouse catch game"]
+
+sleep_stickers = ["CAACAgQAAxkBAAEN7dZnxGJQ5kpGdMUBR7li7kFrK1bUiAACVBQAAmzyAVC_Wb8c8TjbyDYE", "CAACAgQAAxkBAAEN7dhnxGJUT2gE9x3hAZawqUNF87fi_gAC2xEAAhbzAVB8Mx0H91SeGzYE"]
+
+kozjol_chat_id = -1002075990685
 
 
 def mouse_game(chat_id, user_id, user_name):
@@ -127,6 +135,10 @@ def get_reputation():
 
     return reputation_data_sorted
 
+def sleep_reminder():
+    bot.send_message(kozjol_chat_id, "Pßički, čas je spati. Lahko noč😸")
+    bot.send_sticker(kozjol_chat_id, random.choice(sleep_stickers))
+
 
 @bot.message_handler(commands=["pet"])
 def pet_command(message: telebot.types.Message):
@@ -150,6 +162,23 @@ def pet_command(message: telebot.types.Message):
 
     update_reputation(message.from_user.id, message.from_user.first_name, 2)
 
+
+@bot.message_handler(commands=["changelog"])
+def changelog_command(message: telebot.types.Message):
+    text = ""
+
+    commits = repo.get_commits()
+    version = commits.totalCount
+
+    for commit in commits:
+        commit_message = re.sub(r'([\\_*[\]()~>`#+-=|{}.!])', r'\\\1', commit.commit.message)
+
+        text += (f"*Version {version}:\n*"
+                 f"*Changes:*\n"
+                 f"{commit_message}\n\n")
+        version -= 1
+
+    bot.send_message(message.chat.id, f"{text}", parse_mode="MarkdownV2")
 
 @bot.message_handler(commands=["stats"])
 def stats_command(message: telebot.types.Message):
@@ -280,11 +309,14 @@ def info_command(message: telebot.types.Message):
     for emoji in foods:
         food += f"{emoji}, "
 
+    commit_message = last_commit.commit.message
+
     bot.send_message(message.chat.id, f"Markus Version {version}\n"
-                                      f"**Latest update:**\n"
-                                      f"{last_commit.commit.message}\n"
                                       f"\n"
-                                      f"**Reputation ranks:**\n"
+                                      f"*Latest update:*\n"
+                                      f"{commit_message}\n"
+                                      f"\n"
+                                      f"*Reputation ranks:*\n"
                                       f"0-70: Bronze\n"
                                       f"70-140: Silver\n"
                                       f"140-210: Gold\n"
@@ -294,12 +326,12 @@ def info_command(message: telebot.types.Message):
                                       f"420-490: Master\n"
                                       f"490+: Pro\n"
                                       f"\n"
-                                      f"**Supported foods:**\n"
+                                      f"*Supported foods:*\n"
                                       f"{food}", parse_mode="Markdown")
 
 
 @bot.message_handler(func=lambda message: True)
-def update_text_message(message : telebot.types.Message):
+def update_message(message : telebot.types.Message):
     global last_message_id, asked_for_food, chosen_food, unwanted_food, foods
     message_text = message.text.lower()
     chat_id = message.chat.id
@@ -442,5 +474,8 @@ def callback(call: CallbackQuery):
         else:
             bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
 
+
+scheduler.add_job(sleep_reminder, 'cron', day_of_week="mon,tue,wed,thu, sun", hour=22, minute=0)
+scheduler.start()
 
 bot.infinity_polling(skip_pending=True)
