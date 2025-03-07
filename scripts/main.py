@@ -2,7 +2,7 @@ import os, re, random
 from datetime import datetime, timedelta
 
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, WebAppInfo
 
 from github import Github
 from PIL import Image, ImageDraw, ImageFont
@@ -323,7 +323,7 @@ def info_command(message: telebot.types.Message):
 
 @bot.message_handler(commands=["test"])
 def test_command(message: telebot.types.Message):
-    keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton("webapp", url=""))
+    keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton("webapp", web_app=WebAppInfo("https://pkhom.github.io/markus-tg-bot/webapp/index.html")))
     bot.send_message(message.chat.id, "TEST AREA (webapp)", reply_markup=keyboard)
 
 
