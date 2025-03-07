@@ -321,6 +321,12 @@ def info_command(message: telebot.types.Message):
                                       f"{food}", parse_mode="Markdown")
 
 
+@bot.message_handler(commands=["test"])
+def test_command(message: telebot.types.Message):
+    keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton("webapp", url=""))
+    bot.send_message(message.chat.id, "TEST AREA (webapp)", reply_markup=keyboard)
+
+
 @bot.message_handler(func=lambda message: True)
 def update_message(message : telebot.types.Message):
     global last_message_id, asked_for_food, chosen_food, unwanted_food
