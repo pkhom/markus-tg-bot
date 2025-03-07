@@ -27,12 +27,12 @@ msg_to_delete = 0
 
 mg_count = 1
 mg_user_id = 0
-mg_incorrect = 0
-mg_chosen = 0
+mg_incorrect = ""
+mg_callbacks = ["mg_right", "mg_left", "mg_up", "mg_down"]
 
 asked_for_food = False
-chosen_food = ""
-unwanted_food = ""
+chosen_food = None
+unwanted_food = None
 foods = ["🍗", "🐟", "🥓", "🍕", "🥛", "🧀", "🥩", "🍖", "🍤"]
 
 sleep = False
@@ -48,10 +48,10 @@ def mouse_game(chat_id, user_id, user_name):
     global mg_count, mg_user_id, msg_to_delete, mg_incorrect
 
     keyboard = InlineKeyboardMarkup()
-    left_button = InlineKeyboardButton(text="⬅🐭", callback_data="mg_0")
-    right_button = InlineKeyboardButton(text="🐭➡", callback_data="mg_1")
-    up_button = InlineKeyboardButton(text="⬆🐭⬆", callback_data="mg_2")
-    down_button = InlineKeyboardButton(text="⬇🐭⬇", callback_data="mg_3")
+    left_button = InlineKeyboardButton(text="⬅🐭", callback_data="mg_right")
+    right_button = InlineKeyboardButton(text="🐭➡", callback_data="mg_left")
+    up_button = InlineKeyboardButton(text="⬆🐭⬆", callback_data="mg_up")
+    down_button = InlineKeyboardButton(text="⬇🐭⬇", callback_data="mg_down")
     keyboard.add(up_button, row_width=1)
     keyboard.add(left_button, right_button, row_width=2)
     keyboard.add(down_button, row_width=1)
@@ -61,13 +61,13 @@ def mouse_game(chat_id, user_id, user_name):
         bot.send_message(chat_id,
                          "🐭*The Mouse Game\n\nMove the mouse toy left and right and I will try to catch it!\nI have 5 attempts*",
                          parse_mode="Markdown")
-        mg_incorrect = random.randint(0, 3)
+        mg_incorrect = random.choice(mg_callbacks)
         msg_to_delete = bot.send_message(chat_id, f"Mrra {mg_count}/5", reply_markup=keyboard).id
 
         mg_count += 1
     elif mg_count < 6 and mg_count != 1:
         bot.delete_message(chat_id, msg_to_delete)
-        mg_incorrect = random.randint(0, 3)
+        mg_incorrect = random.choice(mg_callbacks)
         msg_to_delete = bot.send_message(chat_id, f"Mrra {mg_count}/5", reply_markup=keyboard).id
 
         mg_count += 1
@@ -75,9 +75,9 @@ def mouse_game(chat_id, user_id, user_name):
         bot.delete_message(chat_id, msg_to_delete)
         bot.send_message(chat_id, "Mrr, you won... (rep +1)")
         update_reputation(user_id, user_name, 1)
-        mg_user_id = 0
+        mg_user_id = None
         mg_count = 1
-        mg_incorrect = 0
+        mg_incorrect = None
 
 def update_reputation(user_id, user_name, repu: int):
     reputation_data = {}
@@ -418,55 +418,25 @@ def update_message(message : telebot.types.Message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call: CallbackQuery):
-    global mg_count, mg_user_id, mg_chosen
+    global mg_count, mg_user_id
 
     call_data = call.data
     chat_id = call.message.chat.id
     call_user = call.from_user
     user_id = call_user.id
 
+    mg_playagain_keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton("Play again", callback_data="play_mouse"))
+
     if call_data == "play_mouse":
         bot.delete_message(chat_id, call.message.id)
         mouse_game(chat_id, user_id, call.from_user.first_name)
 
-    if call_data == "mg_0":
+
+    if call_data.startswith("mg"):
         if user_id == mg_user_id:
-            if mg_incorrect == 0:
+            if call_data == mg_incorrect:
                 bot.delete_message(chat_id, call.message.id)
-                bot.send_message(chat_id, "Mrraaa!🐭☠️")
-                mg_count = 1
-                mg_user_id = 0
-            else:
-                mouse_game(chat_id, user_id, call.from_user.first_name)
-        else:
-            bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
-    elif call_data == "mg_1":
-        if user_id == mg_user_id:
-            if mg_incorrect == 1:
-                bot.delete_message(chat_id, call.message.id)
-                bot.send_message(chat_id, "Mrraaa!🐭☠️")
-                mg_count = 1
-                mg_user_id = 0
-            else:
-                mouse_game(chat_id, user_id, call.from_user.first_name)
-        else:
-            bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
-    elif call_data == "mg_2":
-        if user_id == mg_user_id:
-            if mg_incorrect == 2:
-                bot.delete_message(chat_id, call.message.id)
-                bot.send_message(chat_id, "Mrraaa!🐭☠️")
-                mg_count = 1
-                mg_user_id = 0
-            else:
-                mouse_game(chat_id, user_id, call.from_user.first_name)
-        else:
-            bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
-    elif call_data == "mg_3":
-        if user_id == mg_user_id:
-            if mg_incorrect == 3:
-                bot.delete_message(chat_id, call.message.id)
-                bot.send_message(chat_id, "Mrraaa!🐭☠️")
+                bot.send_message(chat_id, "Mrraaa!🐭☠️", reply_markup=mg_playagain_keyboard)
                 mg_count = 1
                 mg_user_id = 0
             else:
@@ -475,7 +445,7 @@ def callback(call: CallbackQuery):
             bot.send_message(chat_id, f"[{call_user.first_name}](tg://user?id={call_user.first_name}), You are not playing now!")
 
 
-scheduler.add_job(sleep_reminder, 'cron', day_of_week="mon,tue,wed,thu, sun", hour=22, minute=0)
+scheduler.add_job(sleep_reminder, 'cron', day_of_week="mon,tue,wed,thu,sun", hour=22, minute=0)
 scheduler.start()
 
 bot.infinity_polling(skip_pending=True)
