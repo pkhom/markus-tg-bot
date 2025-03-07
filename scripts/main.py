@@ -1,21 +1,21 @@
-import os
-import random
-import re
+import os, re, random
 from datetime import datetime, timedelta
 
 import telebot
-from PIL import Image, ImageDraw, ImageFont
-from apscheduler.schedulers.background import BackgroundScheduler
-from github import Github
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
-API_TOKEN = "5010145034:AAHAqSJkVZ5NnDRKMsOAUjSKBznZGwd94LQ"
+from github import Github
+from PIL import Image, ImageDraw, ImageFont
+from apscheduler.schedulers.background import BackgroundScheduler
 
-bot = telebot.TeleBot(API_TOKEN)
+import config
+
+
+bot = telebot.TeleBot(config.BOT_TOKEN)
 
 scheduler = BackgroundScheduler()
 
-github = Github("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")
+github = Github(config.GITHUB_TOKEN)
 repo = github.get_repo("pkhom/markus-tg-bot")
 
 last_pet_time = {}
@@ -23,56 +23,47 @@ last_feed_time = {}
 
 last_message_id = 0
 
-msg_to_delete = 0
+msgs_to_delete = []
 
+#mouse game
 mg_count = 1
 mg_user_id = 0
 mg_incorrect = ""
 mg_callbacks = ["mg_right", "mg_left", "mg_up", "mg_down"]
 
+#feeding
 asked_for_food = False
 chosen_food = None
 unwanted_food = None
-foods = ["🍗", "🐟", "🥓", "🍕", "🥛", "🧀", "🥩", "🍖", "🍤"]
 
 sleep = False
 
-games = ["Mouse catch game"]
-
 sleep_stickers = ["CAACAgQAAxkBAAEN7dZnxGJQ5kpGdMUBR7li7kFrK1bUiAACVBQAAmzyAVC_Wb8c8TjbyDYE", "CAACAgQAAxkBAAEN7dhnxGJUT2gE9x3hAZawqUNF87fi_gAC2xEAAhbzAVB8Mx0H91SeGzYE"]
-
-kozjol_chat_id = -1002075990685
 
 
 def mouse_game(chat_id, user_id, user_name):
-    global mg_count, mg_user_id, msg_to_delete, mg_incorrect
+    global mg_count, mg_user_id, msgs_to_delete, mg_incorrect
 
     keyboard = InlineKeyboardMarkup()
-    left_button = InlineKeyboardButton(text="⬅🐭", callback_data="mg_right")
-    right_button = InlineKeyboardButton(text="🐭➡", callback_data="mg_left")
-    up_button = InlineKeyboardButton(text="⬆🐭⬆", callback_data="mg_up")
-    down_button = InlineKeyboardButton(text="⬇🐭⬇", callback_data="mg_down")
-    keyboard.add(up_button, row_width=1)
-    keyboard.add(left_button, right_button, row_width=2)
-    keyboard.add(down_button, row_width=1)
+    keyboard.add(InlineKeyboardButton(text="⬆🐭⬆", callback_data="mg_up"), row_width=1)
+    keyboard.add(InlineKeyboardButton(text="⬅🐭", callback_data="mg_left"), InlineKeyboardButton(text="🐭➡", callback_data="mg_right"), row_width=2)
+    keyboard.add(InlineKeyboardButton(text="⬇🐭⬇", callback_data="mg_down"), row_width=1)
+
+    bot.delete_messages(chat_id, msgs_to_delete)
 
     if mg_count == 1:
         mg_user_id = user_id
-        bot.send_message(chat_id,
+        msgs_to_delete.append(bot.send_message(chat_id,
                          "🐭*The Mouse Game\n\nMove the mouse toy left and right and I will try to catch it!\nI have 5 attempts*",
-                         parse_mode="Markdown")
+                         parse_mode="Markdown").id)
         mg_incorrect = random.choice(mg_callbacks)
-        msg_to_delete = bot.send_message(chat_id, f"Mrra {mg_count}/5", reply_markup=keyboard).id
-
+        msgs_to_delete.append(bot.send_message(chat_id, f"Mrra {mg_count}/5", reply_markup=keyboard).id)
         mg_count += 1
     elif mg_count < 6 and mg_count != 1:
-        bot.delete_message(chat_id, msg_to_delete)
         mg_incorrect = random.choice(mg_callbacks)
-        msg_to_delete = bot.send_message(chat_id, f"Mrra {mg_count}/5", reply_markup=keyboard).id
-
+        msgs_to_delete.append(bot.send_message(chat_id, f"Mrra {mg_count}/5", reply_markup=keyboard).id)
         mg_count += 1
     elif mg_count == 6:
-        bot.delete_message(chat_id, msg_to_delete)
         bot.send_message(chat_id, "Mrr, you won... (rep +1)")
         update_reputation(user_id, user_name, 1)
         mg_user_id = None
@@ -136,8 +127,8 @@ def get_reputation():
     return reputation_data_sorted
 
 def sleep_reminder():
-    bot.send_message(kozjol_chat_id, "Pßički, čas je spati. Lahko noč😸")
-    bot.send_sticker(kozjol_chat_id, random.choice(sleep_stickers))
+    bot.send_message(config.KOZJOL_CHAT_ID, "Pßički, čas je spati. Lahko noč😸")
+    bot.send_sticker(config.KOZJOL_CHAT_ID, random.choice(sleep_stickers))
 
 
 @bot.message_handler(commands=["pet"])
@@ -161,7 +152,6 @@ def pet_command(message: telebot.types.Message):
     bot.send_voice(message.chat.id, telebot.types.InputFile(voice), caption="(rep +2)", reply_to_message_id=message.id)
 
     update_reputation(message.from_user.id, message.from_user.first_name, 2)
-
 
 @bot.message_handler(commands=["changelog"])
 def changelog_command(message: telebot.types.Message):
@@ -262,13 +252,14 @@ def rep_command(message: telebot.types.Message):
 
 @bot.message_handler(commands=["play"])
 def play_command(message: telebot.types.Message):
-    global msg_to_delete
+    global msgs_to_delete
 
     games_list_keyboard = InlineKeyboardMarkup()
-    mouse_game_btn = InlineKeyboardButton("Mouse catch game", callback_data="play_mouse")
-    games_list_keyboard.add(mouse_game_btn)
 
-    bot.send_message(message.chat.id, "List of available games.", reply_markup=games_list_keyboard)
+    for game in config.GAMES:
+        games_list_keyboard.add(InlineKeyboardButton(game, callback_data=config.GAMES[game]))
+
+    msgs_to_delete.append(bot.send_message(message.chat.id, "List of available games.", reply_markup=games_list_keyboard).id)
 
 
 @bot.message_handler(commands=["sleep"])
@@ -306,7 +297,7 @@ def info_command(message: telebot.types.Message):
         version += 1
 
     food = ""
-    for emoji in foods:
+    for emoji in config.SUPPORTED_FOODS:
         food += f"{emoji}, "
 
     commit_message = last_commit.commit.message
@@ -332,7 +323,7 @@ def info_command(message: telebot.types.Message):
 
 @bot.message_handler(func=lambda message: True)
 def update_message(message : telebot.types.Message):
-    global last_message_id, asked_for_food, chosen_food, unwanted_food, foods
+    global last_message_id, asked_for_food, chosen_food, unwanted_food
     message_text = message.text.lower()
     chat_id = message.chat.id
     message_id = message.id
@@ -363,10 +354,10 @@ def update_message(message : telebot.types.Message):
     if random.random() < 0.02:
         last_message_id = bot.send_message(chat_id, "Mrraw🙏").id
         asked_for_food = True
-        chosen_food = random.choice(foods)
-        foods.remove(chosen_food)
-        unwanted_food = random.choice(foods)
-        foods.append(chosen_food)
+        chosen_food = random.choice(config.SUPPORTED_FOODS)
+        config.SUPPORTED_FOODS.remove(chosen_food)
+        unwanted_food = random.choice(config.SUPPORTED_FOODS)
+        config.SUPPORTED_FOODS.append(chosen_food)
         print(last_message_id)
         print(f"+:{chosen_food}     -:{unwanted_food}")
 
@@ -374,7 +365,7 @@ def update_message(message : telebot.types.Message):
     current_time = datetime.now()
 
     if ((message.reply_to_message is not None) and (message.reply_to_message.id == last_message_id) and
-            (message_text in foods)):
+            (message_text in config.SUPPORTED_FOODS)):
         if asked_for_food:
             last_message_id = 0
             asked_for_food = False
@@ -418,7 +409,7 @@ def update_message(message : telebot.types.Message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call: CallbackQuery):
-    global mg_count, mg_user_id
+    global mg_count, mg_user_id, msgs_to_delete
 
     call_data = call.data
     chat_id = call.message.chat.id
@@ -428,14 +419,14 @@ def callback(call: CallbackQuery):
     mg_playagain_keyboard = InlineKeyboardMarkup().add(InlineKeyboardButton("Play again", callback_data="play_mouse"))
 
     if call_data == "play_mouse":
-        bot.delete_message(chat_id, call.message.id)
+        bot.delete_messages(chat_id, msgs_to_delete)
         mouse_game(chat_id, user_id, call.from_user.first_name)
 
 
     if call_data.startswith("mg"):
         if user_id == mg_user_id:
             if call_data == mg_incorrect:
-                bot.delete_message(chat_id, call.message.id)
+                bot.delete_messages(chat_id, msgs_to_delete)
                 bot.send_message(chat_id, "Mrraaa!🐭☠️", reply_markup=mg_playagain_keyboard)
                 mg_count = 1
                 mg_user_id = 0
